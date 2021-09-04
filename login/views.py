@@ -1,5 +1,5 @@
 from django.shortcuts import HttpResponse
-from registration.models import Registration
+from django.contrib.auth import authenticate
 
 # Create your views here.
 def login(request):
@@ -9,9 +9,11 @@ def login(request):
     """
     if request.method == "POST":
         try:
-            check_user = Registration.objects.get(username=request.POST["username"])
-            if check_user.password == request.POST["password"]:
-                return HttpResponse("Logined successfully")
+            username=request.POST["username"]
+            password = request.POST["password"]
+            user = authenticate(username=username,password=password)
+            if user is not None:
+                return HttpResponse(f"Logged In SuccesFully with {user.username}")
             return HttpResponse("Password MissMatched")
         except Exception as e:
             return HttpResponse("No such user Found")
