@@ -1,5 +1,5 @@
 from django.shortcuts import HttpResponse
-from .models import Registration
+from django.contrib.auth.models import User
 # Create your views here.
 def registration(request):
 
@@ -7,15 +7,17 @@ def registration(request):
     Method to get data from the user and set them in data base
     """
     if request.method == 'POST':
-        username = request.POST["username"]
-        first_name = request.POST['first_name']
-        last_name = request.POST['last_name']
-        phone_number = request.POST['phone_number']
-        email = request.POST['email']
-        password = request.POST['password']
         try:
-            register_user = Registration(username= username,first_name= first_name,last_name= last_name,phone_number= phone_number,email= email,password=password)
-            register_user.save()
+            username = request.POST["username"]
+            first_name = request.POST['first_name']
+            last_name = request.POST['last_name']
+            email = request.POST['email']
+            password = request.POST['password']
+            #creating a user model
+            new_user = User.objects.create_user(username, email, password)
+            new_user.first_name = first_name
+            new_user.last_name = last_name
+            new_user.save()
             return HttpResponse(f"Registered with username {username}")
         except Exception as e:
             return HttpResponse(f"Registration Failed")
