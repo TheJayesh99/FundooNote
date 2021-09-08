@@ -6,7 +6,7 @@ from rest_framework import status
 from django.contrib.auth import authenticate
 import logging 
 
-logging.basicConfig(filename="fundooNotes.log",filemode="w")
+logging.basicConfig(filename="fundooNotes.log",filemode="a")
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -26,16 +26,16 @@ class Register(APIView):
         try:
             serializers = UserSerializer(data = request.data)
             if serializers.is_valid():
-                serializers.create_user(validation_data= request.data)
+                serializers.create_user(validation_data= serializers.data)
                 logger.info(f"Registered user")
-                return Response(serializers.data,status=status.HTTP_201_CREATED)
+                return Response({"message":"Registered successfully","data":serializers.data["username"]},status=status.HTTP_201_CREATED)
 
             logger.error(f"serializer valiadation fails due to {serializers.errors}")
-            return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message":"User already exsists","data":serializers.errors},status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error("internal server error while registering the user")
-            return Response(serializers.errors,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class Login(APIView):
@@ -55,11 +55,11 @@ class Login(APIView):
             user = authenticate(username=username,password=password)
             if user != None:
                 logger.info(f"logged in successfully by {user.id}")
-                return Response("logged in successfully",status= status.HTTP_202_ACCEPTED)
+                return Response({"message":"logged in successfully","data":user.id},status= status.HTTP_202_ACCEPTED)
             
             logger.warning("invalid login details")
             return Response("invalid details",status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error("internal server error while login by the user")
-            return Response("Invalid details",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
