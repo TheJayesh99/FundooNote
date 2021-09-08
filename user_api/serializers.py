@@ -1,7 +1,20 @@
 from rest_framework import  serializers
-from django.contrib.auth.models import User
+from user_api.models import User
 
 class UserSerializer(serializers.ModelSerializer):
+
     class Meta:
+
         model = User
-        fields = "__all__" 
+        fields = ["username","email","password","first_name","last_name"] 
+
+    def create_user(self,validation_data):
+        
+        try:
+            new_user = User.objects.create_user(validation_data["username"],validation_data["email"],validation_data["password"])
+            new_user.first_name = validation_data["first_name"]
+            new_user.last_name = validation_data["last_name"]
+            new_user.save()
+        except Exception as e:
+            print(e)
+
