@@ -4,6 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from django.contrib.auth import authenticate
+import logging 
+
+logging.basicConfig(filename="fundooNotes.log",filemode="w")
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 # Create your views here.
 
@@ -22,9 +27,14 @@ class Register(APIView):
             serializers = UserSerializer(data = request.data)
             if serializers.is_valid():
                 serializers.create_user(validation_data= request.data)
+                logger.info(f"Registered user")
                 return Response(serializers.data,status=status.HTTP_201_CREATED)
+
+            logger.error(f"serializer valiadation fails due to {serializers.errors}")
             return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
+            logger.error("internal server error while registering the user")
             return Response(serializers.errors,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -44,7 +54,12 @@ class Login(APIView):
             password = request.data.get("password")
             user = authenticate(username=username,password=password)
             if user != None:
+                logger.info(f"logged in successfully by {user.id}")
                 return Response("logged in successfully",status= status.HTTP_202_ACCEPTED)
+            
+            logger.warning("invalid login details")
             return Response("invalid details",status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
+            logger.error("internal server error while login by the user")
             return Response("Invalid details",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
