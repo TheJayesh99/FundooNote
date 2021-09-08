@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from user_api.models import User
 from user_api.serializers import UserSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,15 +18,15 @@ class Register(APIView):
 
     def post(self, request):
 
-        serializers = UserSerializer(data = request.data)
-        if serializers.is_valid():
-            new_user = User.objects.create_user(serializers.data["username"],serializers.data["email"],serializers.data["password"])
-            new_user.first_name = serializers.data["first_name"]
-            new_user.last_name = serializers.data["last_name"]
-            new_user.save()
-            print(serializers.data["first_name"],serializers.data["last_name"])
-            return Response(serializers.data,status=status.HTTP_201_CREATED)
-        return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+        try:
+            serializers = UserSerializer(data = request.data)
+            if serializers.is_valid():
+                serializers.create_user(validation_data= request.data)
+                return Response(serializers.data,status=status.HTTP_201_CREATED)
+            return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(serializers.errors,status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class Login(APIView):
 
@@ -38,9 +38,13 @@ class Login(APIView):
         return Response(f"Welcome to login page")
 
     def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-        user = authenticate(username=username,password=password)
-        if user != None:
-            return Response("logged in successfully",status= status.HTTP_202_ACCEPTED)
-        return Response("invalid details",status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            username = request.data.get("username")
+            password = request.data.get("password")
+            user = authenticate(username=username,password=password)
+            if user != None:
+                return Response("logged in successfully",status= status.HTTP_202_ACCEPTED)
+            return Response("invalid details",status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response("Invalid details",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
