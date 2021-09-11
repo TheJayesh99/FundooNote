@@ -3,8 +3,9 @@ import logging
 import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.core.mail import send_mail
+from django.core.mail import BadHeaderError, send_mail
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -30,7 +31,7 @@ class Register(APIView):
 
         try:
             serializers = UserSerializer(data = request.data)
-            if serializers.is_valid():
+            if serializers.is_valid(raise_exception=True):
                 serializers.create_user(validation_data= serializers.data)
                 #encoding token
                 encoded_token = jwt.encode(
@@ -50,11 +51,34 @@ class Register(APIView):
 
             logger.error(f"serializer valiadation fails due to {serializers.errors}")
             return Response({"message":"User already exsists","data":serializers.errors},status=status.HTTP_400_BAD_REQUEST)
+        
+        except ValidationError:
+            logger.error("validation failed while registering the user")
+            return Response(
+                {
+                    "message":"Validation failed",
+                    "data":serializers.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
 
+        except BadHeaderError:
+            logger.error("Invalid header found while sending mail")
+            return Response(
+                {
+                    "message":"Invalid header found"
+                },
+                status=status.HTTP_406_NOT_ACCEPTABLE
+                )
+        
         except Exception as e:
             logger.error("internal server error while registering the user")
-            print(e)
-            return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {
+                    "message":"internal server error"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
 class Login(APIView):
 
@@ -76,10 +100,15 @@ class Login(APIView):
                 return Response({"message":"logged in successfully","data":user.id},status= status.HTTP_202_ACCEPTED)
             
             logger.warning("invalid login details")
-            return Response("invalid details",status=status.HTTP_400_BAD_REQUEST)
-
+            return Response(
+                {
+                    "message":"invalid details"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
+ 
         except Exception as e:
-            logger.error("internal server error while login by the user")
+            logger.error("internal server error while login by the user {e}")
             return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class Verification(APIView):
@@ -94,7 +123,7 @@ class Verification(APIView):
             user = User.objects.get(username=decoded_token.get("username"))
             user_data= UserSerializer(user)
             serializer = UserSerializer(user,data= user_data.data)
-            if serializer.is_valid():
+            if serializer.is_valid(raise_exception=True):
                 serializer.set_verified(validated_data=serializer.data)
                 return Response(
                     {
@@ -111,12 +140,23 @@ class Verification(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
                 )
-        except Exception as e :
-            logger.error(f"Couldn`t register user due to {e}")
+
+        except ValidationError:
+            logger.error("validation failed while verify the user")
             return Response(
                 {
-                    "message": "failed to verify user",
-                    "data" : serializer.errors
+                    "message":"Validation failed",
+                    "data":serializer.errors
                 },
                 status=status.HTTP_400_BAD_REQUEST
                 )
+
+        except Exception as e :
+            logger.error(f"Couldn`t verify user due to {e}")
+            return Response(
+                {
+                    "message": "failed to verify user",
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
+                

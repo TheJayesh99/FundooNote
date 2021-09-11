@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -45,7 +46,7 @@ class Notes(APIView):
 
         try:
             serializer = NotesSerializer(data=request.data)
-            if serializer.is_valid():
+            if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 logger.info("Added notes by user id "+str(serializer.data["user_id"])+"and note id = "+str(serializer.data["id"]))
                 return Response(
@@ -63,6 +64,16 @@ class Notes(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+            
+        except ValidationError:
+            logger.error("validation failed while adding notes")
+            return Response(
+                {
+                    "message":"Validation failed",
+                    "data":serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
         except Exception as e:
             logger.error("error while adding notes")
             return Response(
@@ -78,7 +89,7 @@ class Notes(APIView):
         try:
             note = NotesModel.objects.get(id=request.data["id"])
             serializer = NotesSerializer(note, data=request.data)
-            if serializer.is_valid():
+            if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 logger.info("note updated successfully of note id = "+str(serializer.data["id"]))
                 return Response(
@@ -96,6 +107,15 @@ class Notes(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except ValidationError:
+            logger.error("validation failed while updating notes")
+            return Response(
+                {
+                    "message":"Validation failed",
+                    "data":serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
         except Exception as e:
             logger.error("data not found for updation")
             return Response(
