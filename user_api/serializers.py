@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
 
         model = User
-        fields = ["username","email","password","first_name","last_name"] 
+        fields = ["username","email","password","first_name","last_name","is_login","is_verified"] 
 
     def create_user(self,validation_data):
         
@@ -25,3 +25,9 @@ class UserSerializer(serializers.ModelSerializer):
             logger.error("Error to create a user in seralizers")
             print(e)
 
+    def set_verified(self, validated_data):
+
+        user = User.objects.get(username = validated_data.get("username"))
+        user.is_verified = True
+        user.save()
+        
