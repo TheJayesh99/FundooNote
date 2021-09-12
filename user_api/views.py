@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from user_api.models import User
 from user_api.serializers import UserSerializer
+from user_api.utility import EncodeDecodeToken
 
 logging.basicConfig(filename="fundooNotes.log",filemode="a")
 logger = logging.getLogger()
@@ -34,11 +35,7 @@ class Register(APIView):
             if serializers.is_valid(raise_exception=True):
                 serializers.create_user(validation_data= serializers.data)
                 #encoding token
-                encoded_token = jwt.encode(
-                    {"username" : serializers.data.get("username")},
-                    "secret",
-                    algorithm="HS256"
-                    )
+                encoded_token = EncodeDecodeToken.encode_token(serializers)
                 # sending mail with encoded token
                 subject = 'welcome to FundooNotes'
                 message = f'Hi {serializers.data.get("username")}, thank you for registering in FundooNotes. click on the link below to get yourself verified\n http://127.0.0.1:8000/user/verify/{encoded_token}/'
@@ -82,6 +79,7 @@ class Register(APIView):
 
 class Login(APIView):
 
+
     """
     Class to validate login of user
     """
@@ -91,14 +89,19 @@ class Login(APIView):
 
     def post(self, request):
 
+
         try:
             username = request.data.get("username")
             password = request.data.get("password")
             user = authenticate(username=username,password=password)
-            if user != None:
-                logger.info(f"logged in successfully by {user.id}")
-                return Response({"message":"logged in successfully","data":user.id},status= status.HTTP_202_ACCEPTED)
-            
+            if user != None and user.is_verified :
+                serializers = UserSerializer(user)
+                encoded_token = EncodeDecodeToken.encode_token(serializers)
+                logger.info(f"logged in successfully by {serializers.data.get('id')}")
+                return Response({"message":"logged in successfully","data":{"token":encoded_token}},status= status.HTTP_202_ACCEPTED)
+
+            elif not user.is_verified :
+                return Response({"message":"user is not verified","data":user.id},status= status.HTTP_400_BAD_REQUEST)
             logger.warning("invalid login details")
             return Response(
                 {
@@ -106,9 +109,9 @@ class Login(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
                 )
- 
+    
         except Exception as e:
-            logger.error("internal server error while login by the user {e}")
+            logger.error(f"internal server error while login by the user {e}")
             return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class Verification(APIView):
@@ -119,7 +122,7 @@ class Verification(APIView):
     def get(self, request, token):
         
         try:
-            decoded_token = jwt.decode(token,"secret",algorithms="HS256")
+            decoded_token = EncodeDecodeToken.decode_token(token)
             user = User.objects.get(username=decoded_token.get("username"))
             user_data= UserSerializer(user)
             serializer = UserSerializer(user,data= user_data.data)
