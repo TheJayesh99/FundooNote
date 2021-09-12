@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from notes.models import NotesModel
 from notes.serializers import NotesSerializer
+from notes.utility import EncodeDecodeToken
 
 logging.basicConfig(filename="fundooNotes.log", filemode="a")
 logger = logging.getLogger()
@@ -20,11 +21,14 @@ class Notes(APIView):
     """
 
     def get(self, request):
+        
         try:
+            decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
+            user_id = decode_token.get("user_id")   
             serializer = NotesSerializer(
-                NotesModel.objects.filter(user_id=request.data["user_id"]), many=True
+                NotesModel.objects.filter(user_id=user_id), many=True
             )
-            logger.info("Get all notes of user id = "+str(request.data["user_id"]))
+            logger.info("Get all notes of user id = "+str(user_id))
             return Response(
                 {
                     "message": "Welcome to our notes",
@@ -32,12 +36,14 @@ class Notes(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
+        except TypeError:
+            return Response("token not found")
         except Exception as e:
-            logger.warning("Invalid user id")
+            logger.error(f"internal server error while viewing all notes due to {str(e)}")
             return Response(
                 {
-                    "message": "No notes found",
-                    "data": {},
+                    "message": "internal server error",
+                    "data": {"error":str(e)},
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
@@ -45,7 +51,10 @@ class Notes(APIView):
     def post(self, request):
 
         try:
-            serializer = NotesSerializer(data=request.data)
+            decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
+            notes_data = request.data
+            notes_data["user_id"] = decode_token.get("user_id")
+            serializer = NotesSerializer(data=notes_data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 logger.info("Added notes by user id "+str(serializer.data["user_id"])+"and note id = "+str(serializer.data["id"]))
@@ -59,7 +68,7 @@ class Notes(APIView):
             logger.warning("invalid data while adding a note "+str(serializer.errors))
             return Response(
                 {
-                    "message": "invalid data",
+                    "message": "invalid data or login in before you add notes",
                     "data": serializer.errors,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -79,7 +88,7 @@ class Notes(APIView):
             return Response(
                 {
                     "message": "error while adding notes",
-                    "data": serializer.errors,
+                    "data": {},
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
