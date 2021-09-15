@@ -1,6 +1,6 @@
 import jwt
 from django.conf import settings
-
+from django.http import JsonResponse
 
 
 class EncodeDecodeToken:
@@ -17,3 +17,15 @@ class EncodeDecodeToken:
             algorithms="HS256"
         )
         return decoded_token
+
+
+def verify_token(function):
+
+    def wrapper(self,request):
+
+        if 'HTTP_TOKEN' not in request.META:
+            resp = JsonResponse({'message':'Token Not provided in header'})
+            resp.status_code = 400
+            return resp
+        return function(self,request)
+    return wrapper
