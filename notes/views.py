@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from notes.models import NotesModel
 from notes.serializers import NotesSerializer
-from notes.utility import EncodeDecodeToken
+from notes.utility import verify_token
 
 logging.basicConfig(filename="fundooNotes.log", filemode="a")
 logger = logging.getLogger()
@@ -19,16 +19,14 @@ class Notes(APIView):
     """
     Notes api to manage all the curd operations regarding to notes
     """
-
+    @verify_token
     def get(self, request):
         
         try:
-            decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
-            user_id = decode_token.get("user_id")   
             serializer = NotesSerializer(
-                NotesModel.objects.filter(user_id=user_id), many=True
+                NotesModel.objects.filter(user_id=request.data.get("user_id")), many=True
             )
-            logger.info("Get all notes of user id = "+str(user_id))
+            logger.info("Get all notes of user id = "+str(request.data.get("user_id")))
             return Response(
                 {
                     "message": "Welcome to our notes",
@@ -48,13 +46,11 @@ class Notes(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+    @verify_token
     def post(self, request):
 
         try:
-            decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
-            notes_data = request.data
-            notes_data["user_id"] = decode_token.get("user_id")
-            serializer = NotesSerializer(data=notes_data)
+            serializer = NotesSerializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 logger.info("Added notes by user id "+str(serializer.data["user_id"])+"and note id = "+str(serializer.data["id"]))
@@ -93,6 +89,7 @@ class Notes(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    @verify_token
     def put(self, request):
 
         try:
@@ -135,6 +132,7 @@ class Notes(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+    @verify_token
     def delete(self, request):
 
         try:
