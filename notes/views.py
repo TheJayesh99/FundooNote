@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from notes.models import NotesModel
 from notes.serializers import NotesSerializer
-from notes.utility import EncodeDecodeToken, verify_token
+from notes.utility import verify_token
 
 logging.basicConfig(filename="fundooNotes.log", filemode="a")
 logger = logging.getLogger()
@@ -23,12 +23,10 @@ class Notes(APIView):
     def get(self, request):
         
         try:
-            decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
-            user_id = decode_token.get("user_id")   
             serializer = NotesSerializer(
-                NotesModel.objects.filter(user_id=user_id), many=True
+                NotesModel.objects.filter(user_id=request.data.get("user_id")), many=True
             )
-            logger.info("Get all notes of user id = "+str(user_id))
+            logger.info("Get all notes of user id = "+str(request.data.get("user_id")))
             return Response(
                 {
                     "message": "Welcome to our notes",
@@ -52,8 +50,6 @@ class Notes(APIView):
     def post(self, request):
 
         try:
-            decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
-            request.data["user_id"] = decode_token.get("user_id")
             serializer = NotesSerializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()

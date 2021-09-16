@@ -27,5 +27,7 @@ def verify_token(function):
             resp = JsonResponse({'message':'Token Not provided in header'})
             resp.status_code = 400
             return resp
-        return function(self,request)
+        decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
+        request.data["user_id"] = decode_token.get("user_id")
+        return function(self, request)
     return wrapper
