@@ -1,6 +1,6 @@
 import logging
 
-import jwt
+import redis
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.mail import BadHeaderError, send_mail
@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from user_api.models import User
 from user_api.serializers import UserSerializer
-from user_api.utility import EncodeDecodeToken
+from user_api.utility import EncodeDecodeToken ,redis_instence
 
 logging.basicConfig(filename="fundooNotes.log",filemode="a")
 logger = logging.getLogger()
@@ -98,6 +98,7 @@ class Login(APIView):
                 serializers = UserSerializer(user)
                 encoded_token = EncodeDecodeToken.encode_token(serializers)
                 logger.info(f"logged in successfully by {serializers.data.get('id')}")
+                redis_instence.set(serializers.data.get('id'),encoded_token)
                 return Response({"message":"logged in successfully","data":{"token":encoded_token}},status= status.HTTP_202_ACCEPTED)
 
             elif not user.is_verified :

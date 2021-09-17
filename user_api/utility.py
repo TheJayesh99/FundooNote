@@ -1,6 +1,6 @@
 import jwt
+import redis
 from django.conf import settings
-
 
 
 class EncodeDecodeToken:
@@ -27,3 +27,5 @@ class EncodeDecodeToken:
             algorithms="HS256"
         )
         return decoded_token
+
+redis_instence = redis.Redis(host=settings.REDIS_HOST,port=settings.REDIS_PORT)
