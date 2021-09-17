@@ -29,17 +29,17 @@ def verify_token(function):
             resp = JsonResponse({'message':'Token Not provided in header'})
             resp.status_code = 400
             return resp
-        request_decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
-        redis_decode_token = EncodeDecodeToken.decode_token(redis_instence.get("id"))
-        if redis_decode_token.get("user_id") != request_decode_token.get("user_id"): 
+        decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
+        redis_decode_token = EncodeDecodeToken.decode_token(redis_instence.get(decode_token.get("user_id")))
+        if redis_decode_token.get("user_id") != decode_token.get("user_id"):
             resp = JsonResponse({
                 'message':'login again',
-                "redis":str(redis_instence.get("id")),
+                "redis":str(redis_decode_token),
                 "request":request.META.get('HTTP_TOKEN')
                 })
             resp.status_code = 400
             return resp
-        request.data["user_id"] = request_decode_token.get("user_id")
+        request.data["user_id"] = decode_token.get("user_id")
         return function(self, request)
     return wrapper
 

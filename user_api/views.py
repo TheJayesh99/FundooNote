@@ -98,7 +98,7 @@ class Login(APIView):
                 serializers = UserSerializer(user)
                 encoded_token = EncodeDecodeToken.encode_token(serializers)
                 logger.info(f"logged in successfully by {serializers.data.get('id')}")
-                redis_instence.set("id",encoded_token)
+                redis_instence.set(serializers.data.get('id'),encoded_token)
                 return Response({"message":"logged in successfully","data":{"token":encoded_token}},status= status.HTTP_202_ACCEPTED)
 
             elif not user.is_verified :
