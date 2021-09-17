@@ -34,10 +34,8 @@ def verify_token(function):
         if redis_decode_token.get("user_id") != decode_token.get("user_id"):
             resp = JsonResponse({
                 'message':'login again',
-                "redis":str(redis_decode_token),
-                "request":request.META.get('HTTP_TOKEN')
                 })
-            resp.status_code = 400
+            resp.status_code = 401
             return resp
         request.data["user_id"] = decode_token.get("user_id")
         return function(self, request)
