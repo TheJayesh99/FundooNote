@@ -1,0 +1,17 @@
+[run]
+omit = 
+    *apps.py,
+    *migrations/*,
+    *settings.py,
+    *test/*,
+    *urls.py,
+    *asgi.py,
+    *wsgi.py,
+    manage.py,
+    *fundooNotes_env/*,
+    *admin.py,
+    *__init__.py,
+    *apps.py,
+    *serializers.py,
+    *utility.py,
+    
