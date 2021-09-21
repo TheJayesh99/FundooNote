@@ -61,14 +61,6 @@ class Notes(APIView):
                     },
                     status=status.HTTP_201_CREATED,
                 )
-            logger.warning("invalid data while adding a note "+str(serializer.errors))
-            return Response(
-                {
-                    "message": "invalid data or login in before you add notes",
-                    "data": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
             
         except ValidationError:
             logger.error("validation failed while adding notes")
@@ -105,14 +97,6 @@ class Notes(APIView):
                     },
                     status=status.HTTP_202_ACCEPTED,
                 )
-            logger.warning("Invalid data while updating notes "+str(serializer.errors))
-            return Response(
-                {
-                    "message": "Error while updating notes",
-                    "data": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         except ValidationError:
             logger.error("validation failed while updating notes")
             return Response(
