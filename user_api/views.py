@@ -45,9 +45,6 @@ class Register(APIView):
                 logger.info(f"Registered user")
 
                 return Response({"message":"Registered successfully","data":serializers.data["username"]},status=status.HTTP_201_CREATED)
-
-            logger.error(f"serializer valiadation fails due to {serializers.errors}")
-            return Response({"message":"User already exsists","data":serializers.errors},status=status.HTTP_400_BAD_REQUEST)
         
         except ValidationError:
             logger.error("validation failed while registering the user")
@@ -136,14 +133,6 @@ class Verification(APIView):
                     },
                     status=status.HTTP_202_ACCEPTED
                     )
-            logger.error(f"failed to verify user due to {serializer.errors}")
-            return Response(
-                {
-                    "message": "failed to verify user",
-                    "data" : serializer.errors
-                },
-                status=status.HTTP_400_BAD_REQUEST
-                )
 
         except ValidationError:
             logger.error("validation failed while verify the user")

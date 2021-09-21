@@ -1,7 +1,7 @@
 import jwt
 import redis
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse,QueryDict
 
 redis_instence = redis.Redis(host=settings.REDIS_HOST,port=settings.REDIS_PORT)
 
@@ -37,6 +37,8 @@ def verify_token(function):
                 })
             resp.status_code = 401
             return resp
+        if isinstance(request.data, QueryDict):
+            request.data._mutable = True
         request.data["user_id"] = decode_token.get("user_id")
         return function(self, request)
     return wrapper
