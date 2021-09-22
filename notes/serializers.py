@@ -11,12 +11,20 @@ class NotesSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def create(self, validated_data):
-        return NotesModel.objects.create(**validated_data)
+        notes = NotesModel.objects.create(
+            title=validated_data.get("title"),
+            description=validated_data.get("description"),
+            user_id = validated_data.get("user_id"),
+            labels = validated_data.get("labels"),
+            )
+        notes.save()
+        notes.contributers.set(validated_data.get("contributers"))
+        return notes
 
     def update(self, instance, validated_data):
 
         instance.title = validated_data.get("title",instance.title)
         instance.description = validated_data.get("description",instance.description)
-        instance.user_id = validated_data.get("user_id",instance.user_id)
+        instance.labels = validated_data.get("labels",instance.labels)
         instance.save()
         return instance

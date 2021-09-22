@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -23,8 +24,11 @@ class Notes(APIView):
     def get(self, request):
         
         try:
+            owner = Q(user_id=request.data.get("user_id"))
+            contributer = Q(contributers=request.data.get("user_id"))
+            notes = NotesModel.objects.filter(owner | contributer)
             serializer = NotesSerializer(
-                NotesModel.objects.filter(user_id=request.data.get("user_id")), many=True
+               notes, many=True
             )
             logger.info("Get all notes of user id = "+str(request.data.get("user_id")))
             return Response(
@@ -34,8 +38,6 @@ class Notes(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-        except TypeError:
-            return Response("token not found")
         except Exception as e:
             logger.error(f"internal server error while viewing all notes due to {str(e)}")
             return Response(
@@ -72,7 +74,7 @@ class Notes(APIView):
                 status=status.HTTP_400_BAD_REQUEST
                 )
         except Exception as e:
-            logger.error("error while adding notes")
+            logger.error(f"error while adding notes {str(e)}")
             return Response(
                 {
                     "message": "error while adding notes",
@@ -85,7 +87,7 @@ class Notes(APIView):
     def put(self, request):
 
         try:
-            note = NotesModel.objects.get(id=request.data["id"])
+            note = NotesModel.objects.get(id=request.data["id"]) 
             serializer = NotesSerializer(note, data=request.data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
@@ -107,7 +109,7 @@ class Notes(APIView):
                 status=status.HTTP_400_BAD_REQUEST
                 )
         except Exception as e:
-            logger.error("data not found for updation")
+            logger.error(f"data not found for updation {str(e)}")
             return Response(
                 {
                     "message": "no such note found",
@@ -138,4 +140,33 @@ class Notes(APIView):
                     "data": {},
                 },
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+class Label(APIView):
+
+    @verify_token
+    def get(self, request):
+
+        try:
+            label = Q(labels__contains=request.data.get("labels"))
+            owner = Q(user_id = request.data.get("user_id"))
+            contributer = Q(contributers=request.data.get("user_id"))
+            notes = NotesModel.objects.filter( label & (owner | contributer)) 
+            serializer = NotesSerializer(notes, many=True)
+            return Response({
+                "message" : "The notes retrived sucessfully",
+                "data" : {
+                    "notelist":serializer.data
+                    }
+                },
+                status=status.HTTP_202_ACCEPTED
+                )
+        except Exception as e:
+            logger.error(f"internal server error while viewing all notes due to {str(e)}")
+            return Response(
+                {
+                    "message": "internal server error",
+                    "data": {"error":str(e)},
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

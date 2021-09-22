@@ -9,11 +9,6 @@ pytestmark = pytest.mark.django_db
 
 class TestNotes:
 
-    def test_init(self):
-
-        notes_obj = mixer.blend('notes.NotesModel')
-        assert notes_obj.pk == 1 , 'should save an instance' 
-
     def test_to_add_notes_of_particular_user(self, client):
         
         #creating a user
@@ -32,7 +27,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         header = {
@@ -59,7 +55,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         header = {
@@ -88,7 +85,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         header = {
@@ -124,7 +122,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         header = {
@@ -182,7 +181,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         response = client.post(url, notes_data)
@@ -229,7 +229,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         header = {
@@ -265,7 +266,8 @@ class TestNotes:
         #adding notes
         notes_data = {
             "title":"This is my first note",
-            "description":"this is my first note"
+            "description":"this is my first note",
+            "labels":["comic","sci-fi"]
         }
         url= reverse("note:notes")
         header = {
