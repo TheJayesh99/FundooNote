@@ -1,4 +1,5 @@
 import logging
+from user_api.models import User
 
 from django.db.models import Q
 from rest_framework import status
@@ -6,8 +7,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from notes.models import NotesModel
-from notes.serializers import NotesSerializer
+from notes.models import Labels, NotesModel
+from notes.serializers import LabelSerializer, NotesSerializer
+from user_api.serializers import UserSerializer
 from notes.utility import verify_token
 
 logging.basicConfig(filename="fundooNotes.log", filemode="a")
@@ -25,8 +27,8 @@ class Notes(APIView):
         
         try:
             owner = Q(user_id=request.data.get("user_id"))
-            contributer = Q(contributers=request.data.get("user_id"))
-            notes = NotesModel.objects.filter(owner | contributer)
+            collaborators = Q(collaborators=request.data.get("user_id"))
+            notes = NotesModel.objects.filter(owner | collaborators)
             serializer = NotesSerializer(
                notes, many=True
             )
@@ -148,10 +150,10 @@ class Label(APIView):
     def get(self, request):
 
         try:
-            label = Q(labels__contains=request.data.get("labels"))
+            label = Q(label=request.data.get("id"))
             owner = Q(user_id = request.data.get("user_id"))
-            contributer = Q(contributers=request.data.get("user_id"))
-            notes = NotesModel.objects.filter( label & (owner | contributer)) 
+            collaborators = Q(collaborators=request.data.get("user_id"))
+            notes = NotesModel.objects.filter( label & (owner | collaborators)) 
             serializer = NotesSerializer(notes, many=True)
             return Response({
                 "message" : "The notes retrived sucessfully",
@@ -169,4 +171,190 @@ class Label(APIView):
                     "data": {"error":str(e)},
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @verify_token
+    def post(self, request):
+
+        try:
+            serializer = LabelSerializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+            return Response({
+                "message":"label created sucessfully",
+                "data":serializer.data
+                },
+                status=status.HTTP_201_CREATED
+                )
+        except ValidationError:
+            logger.error("validation failed while adding notes")
+            return Response(
+                {
+                    "message":"Validation failed",
+                    "data":serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            logger.error(f"error while adding notes {str(e)}")
+            return Response(
+                {
+                    "message": "error while adding notes",
+                    "data": {},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    @verify_token
+    def put(self, request):
+
+        try:
+            label = Labels.objects.get(id=request.data.get("id"))
+            serializer = LabelSerializer(label,data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                logger.info("label updated successfully of label id = "+str(serializer.data["id"]))
+                return Response(
+                    {
+                        "message": "label updated successfully",
+                        "data": serializer.data,
+                    },
+                    status=status.HTTP_202_ACCEPTED,
+                )
+        except ValidationError:
+            logger.error("validation failed while updating label")
+            return Response(
+                {
+                    "message":"Validation failed",
+                    "data":serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            logger.error(f"data not found for updation {str(e)}")
+            return Response(
+                {
+                    "message": "no such label found",
+                    "data": {},
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    @verify_token   
+    def delete(self, request):
+
+        try:
+            note = Labels.objects.get(id=request.data["id"])
+            note.delete()
+            logger.info("label deleted suceessfully having label id "+ str(request.data["id"]))
+            return Response(
+                {
+                    "message": "nlabel deleted successfully",
+                    "data": {},
+                },
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        except Exception as e:
+            logger.error("error occured while deleting a label")
+            return Response(
+                {
+                    "message": "no such label",
+                    "data": {},
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+class Collaborators(APIView):
+
+    @verify_token
+    def get(self, request):
+
+        try:
+            note = NotesModel.objects.get(id=request.data.get("id"))
+            collaboraters = note.collaborators.all()
+            serializer = UserSerializer(collaboraters, many=True)
+            return Response({
+                "message" : "The notes retrived sucessfully",
+                "data" : {
+                    "notelist":serializer.data
+                    }
+                },
+                status=status.HTTP_202_ACCEPTED
+                )
+        except Exception as e:
+            logger.error(f"internal server error while viewing all notes due to {str(e)}")
+            return Response(
+                {
+                    "message": "internal server error",
+                    "data": {"error":str(e)},
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @verify_token
+    def put(self, request):
+        
+        try:
+            note = NotesModel.objects.get(id=request.data.get("id"))
+            serializer = NotesSerializer(note)
+            if request.data.get("collaborators"):
+                note.collaborators.set(request.data.get("collaborators"))
+                logger.info("Added collaborators by user id "+str(serializer.data["user_id"])+"and note id = "+str(serializer.data["id"]))
+                return Response(
+                    {
+                        "message": "collaborators added successfully",
+                        "data": {"note": serializer.data},
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+            return Response(
+                {
+                    "message": "failed to add collaborators",
+                    "data": {"note": serializer.data},
+                },
+                status=status.HTTP_304_NOT_MODIFIED,
+            )
+            
+        except ValidationError:
+            logger.error("validation failed while adding collaborators")
+            return Response(
+                {
+                    "message":"Validation failed",
+                    "data":serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            logger.error(f"error while adding collaborators {str(e)}")
+            return Response(
+                {
+                    "message": "error while adding collaborators",
+                    "data": {},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    @verify_token
+    def delete(self, request):
+
+        try:
+            user = User.objects.get(id=request.data.get("user_id"))
+            note = NotesModel.objects.get(id=request.data.get("id"))
+            note.collaborators.remove(user)
+            logger.info("collaborators removed suceessfully having collaborators id "+ str(request.data["id"]))
+            return Response(
+                {
+                    "message": "collaborators removed successfully",
+                    "data": {},
+                },
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        except Exception as e:
+            logger.error("error occured while deleting a collaborators")
+            return Response(
+                {
+                    "message": "no such collaborators",
+                    "data": {},
+                },
+                status=status.HTTP_404_NOT_FOUND,
             )

@@ -28,7 +28,8 @@ class TestNotes:
         notes_data = {
             "title":"This is my first note",
             "description":"this is my first note",
-            "labels":["comic","sci-fi"]
+            "labels":["comic","sci-fi"],
+            "contributers":[1]
         }
         url= reverse("note:notes")
         header = {
@@ -86,7 +87,8 @@ class TestNotes:
         notes_data = {
             "title":"This is my first note",
             "description":"this is my first note",
-            "labels":["comic","sci-fi"]
+            "labels":["comic","sci-fi"],
+            "contributers":[2]
         }
         url= reverse("note:notes")
         header = {
@@ -99,6 +101,8 @@ class TestNotes:
         updated_note_data = {
             "title":"This is my first note",
             "description":"this is my updated note",
+            "labels":["comic","sci-fi"],
+            "contributers":[1],
             "id":int(id)
         }
         response = client.put(url, updated_note_data, content_type='application/json', **header)
@@ -123,7 +127,8 @@ class TestNotes:
         notes_data = {
             "title":"This is my first note",
             "description":"this is my first note",
-            "labels":["comic","sci-fi"]
+            "labels":["comic","sci-fi"],
+            "contributers":[3]
         }
         url= reverse("note:notes")
         header = {
@@ -226,31 +231,21 @@ class TestNotes:
         response = client.post(url,login_data)
         json_data = json.loads(response.content)
         token = json_data.get('data').get("token")
-        #adding notes
-        notes_data = {
-            "title":"This is my first note",
-            "description":"this is my first note",
-            "labels":["comic","sci-fi"]
-        }
         url= reverse("note:notes")
         header = {
             "HTTP_TOKEN":token,
         }
-        response = client.post(url, notes_data , **header)
-        json_data = json.loads(response.content)
-        id = json_data.get('data').get("note").get("id")
-        #updating exsisting note
         updated_note_data = {
             "title":"This is my first note",
             "description":"this is my updated note",
-            "id":id+1
+            "id":10
         }
         response = client.put(url, updated_note_data, content_type='application/json', **header)
         assert response.status_code == 404
 
     def test_to_delete_note_which_does_not_exsists(self, client):
 
-      #creating user
+        #creating user
         user = User.objects.create_user("jayesh34","jay@mail.com","jay_password")
         user.is_verified = True
         user.save()
@@ -263,22 +258,13 @@ class TestNotes:
         response = client.post(url,login_data)
         json_data = json.loads(response.content)
         token = json_data.get('data').get("token")
-        #adding notes
-        notes_data = {
-            "title":"This is my first note",
-            "description":"this is my first note",
-            "labels":["comic","sci-fi"]
-        }
         url= reverse("note:notes")
         header = {
             "HTTP_TOKEN":token,
         }
-        response = client.post(url, notes_data , **header)
-        json_data = json.loads(response.content)
-        id = json_data.get('data').get("note").get("id")
         #deleting exsisting note
         delete_note_data = {
-            "id":id+2
+            "id":2
         }
         response = client.delete(url, delete_note_data, content_type='application/json', **header)
         assert response.status_code == 404

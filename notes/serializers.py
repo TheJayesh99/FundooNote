@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from notes.models import NotesModel
+from notes.models import Labels, NotesModel
 
 
 class NotesSerializer(serializers.ModelSerializer):
@@ -15,16 +15,28 @@ class NotesSerializer(serializers.ModelSerializer):
             title=validated_data.get("title"),
             description=validated_data.get("description"),
             user_id = validated_data.get("user_id"),
-            labels = validated_data.get("labels"),
             )
-        notes.save()
-        notes.contributers.set(validated_data.get("contributers"))
+        if validated_data.get("collaborators"):
+            notes.collaborators.set(validated_data.get("collaborators"))
+        if validated_data.get("label"):
+            notes.label.set(validated_data.get("label"))
         return notes
 
     def update(self, instance, validated_data):
 
         instance.title = validated_data.get("title",instance.title)
         instance.description = validated_data.get("description",instance.description)
-        instance.labels = validated_data.get("labels",instance.labels)
+        if validated_data.get("label"):
+            instance.label.set(validated_data.get("label"))
         instance.save()
         return instance
+
+class LabelSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model = Labels
+        fields = "__all__"
+
+    def create(self, validated_data):
+        return super().create(validated_data)

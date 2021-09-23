@@ -1,9 +1,13 @@
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from user_api.models import User
 
 
 # Create your models here.
+class Labels(models.Model):
+
+    label = models.CharField(max_length=10,default="")
+    color = models.CharField(max_length=10,default="yellow")
+    
 class NotesModel(models.Model):
 
     """
@@ -16,6 +20,5 @@ class NotesModel(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=500)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    labels = ArrayField(models.CharField(max_length=15,default=False), default=None)
-    contributers = models.ManyToManyField(User,related_name="contributers")
-    
+    label = models.ManyToManyField(Labels, related_name="labels",default=0)
+    collaborators = models.ManyToManyField(User, related_name="collaborators",default=0)
