@@ -1,7 +1,12 @@
+from user_api.models import User
 import jwt
 import redis
 from django.conf import settings
-from django.http import JsonResponse,QueryDict
+from django.http import JsonResponse, QueryDict
+from user_api.serializers import UserSerializer
+
+from notes.models import Labels
+from notes.serializers import LabelSerializer
 
 redis_instence = redis.Redis(host=settings.REDIS_HOST,port=settings.REDIS_PORT)
 
@@ -43,3 +48,32 @@ def verify_token(function):
         return function(self, request)
     return wrapper
 
+def notes_converter(notes_list):
+    
+    """
+    converts all the id into names
+    """
+    for notes in notes_list: 
+        
+        #converting all the labels id into its details
+        label_list = []
+        for label_id in notes.get("label"):
+            label_details = LabelSerializer(Labels.objects.get(id = label_id))
+            label_list.append(label_details.data)
+        notes["label"] = label_list
+
+        #converting all the labels id into its username
+        collaborator_list = []
+        for collaborator_id in notes.get("collaborators"):
+            collaborator_details = UserSerializer(User.objects.get(id= collaborator_id))
+            collaborator_list.append(collaborator_details.data.get("username"))
+        notes["collaborators"] = collaborator_list
+    return notes_list
+
+def user_details(user_list):
+    
+    username_list = []
+    for user_id in user_list:
+        username_list.append(user_id.get("username"))
+    return username_list
+    
