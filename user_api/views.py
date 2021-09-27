@@ -12,6 +12,8 @@ from rest_framework.views import APIView
 from user_api.models import User
 from user_api.serializers import UserSerializer
 from user_api.utility import EncodeDecodeToken ,redis_instence
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 logging.basicConfig(filename="fundooNotes.log",filemode="a")
 logger = logging.getLogger()
@@ -28,6 +30,18 @@ class Register(APIView):
 
         return Response(f"Welcome to registration plz register")
 
+    @swagger_auto_schema(
+        operation_summary="register user",
+        request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT, 
+        properties={
+            'username': openapi.Schema(type=openapi.TYPE_STRING, description='username'),
+            'password': openapi.Schema(type=openapi.TYPE_STRING, description='password'),
+            'email': openapi.Schema(type=openapi.TYPE_STRING, description='email'),
+            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='first name'),
+            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='last name'),
+        }
+        ))
     def post(self, request):
 
         try:
@@ -84,6 +98,15 @@ class Login(APIView):
 
         return Response(f"Welcome to login page")
 
+    @swagger_auto_schema(
+        operation_summary="login user",
+        request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT, 
+        properties={
+            'username': openapi.Schema(type=openapi.TYPE_STRING, description='string'),
+            'password': openapi.Schema(type=openapi.TYPE_STRING, description='string'),
+        }
+        ))
     def post(self, request):
 
 
@@ -117,6 +140,7 @@ class Verification(APIView):
     """
     This api use to validate the user email is it correct or not
     """
+    
     def get(self, request, token):
         
         try:
