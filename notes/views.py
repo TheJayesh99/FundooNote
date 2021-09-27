@@ -1,6 +1,7 @@
 import logging
 
 from django.db.models import Q
+from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -11,17 +12,22 @@ from user_api.serializers import UserSerializer
 from notes.models import Labels, NotesModel
 from notes.serializers import LabelSerializer, NotesSerializer
 from notes.utility import verify_token, notes_converter, user_details 
+from drf_yasg.utils import swagger_auto_schema
 
 logging.basicConfig(filename="fundooNotes.log", filemode="a")
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+header = openapi.Parameter('token',in_=openapi.IN_HEADER,type=openapi.TYPE_STRING)
 # Create your views here.
 class Notes(APIView):
 
     """
     Notes api to manage all the curd operations regarding to notes
     """
+    @swagger_auto_schema(
+        operation_summary="fetch notes",
+        manual_parameters=[header])
     @verify_token
     def get(self, request):
         
@@ -50,7 +56,17 @@ class Notes(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
-
+    
+    @swagger_auto_schema(
+        operation_summary="Add notes",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'title' : openapi.Schema(type=openapi.TYPE_STRING,description="title"),
+                'description' : openapi.Schema(type=openapi.TYPE_STRING,description="description"),
+            }
+        ),
+        manual_parameters=[header])
     @verify_token
     def post(self, request):
 
@@ -87,6 +103,17 @@ class Notes(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    @swagger_auto_schema(
+        operation_summary="update notes",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'title' : openapi.Schema(type=openapi.TYPE_STRING,description="title"),
+                'description' : openapi.Schema(type=openapi.TYPE_STRING,description="description"),
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="note id"),
+            }
+        ),
+        manual_parameters=[header])
     @verify_token
     def put(self, request):
 
@@ -123,6 +150,15 @@ class Notes(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+    @swagger_auto_schema(
+        operation_summary="Delete notes",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="note id"),
+            }
+        ),
+        manual_parameters=[header])
     @verify_token
     def delete(self, request):
 
@@ -152,6 +188,9 @@ class Label(APIView):
     """
     Labels api to manage all the labels on the notes 
     """
+    @swagger_auto_schema(
+        operation_summary="get label",
+        manual_parameters=[header])
     @verify_token
     def get(self, request):
 
@@ -176,6 +215,10 @@ class Label(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @swagger_auto_schema(
+        operation_summary="add label",
+        request_body=LabelSerializer,
+        manual_parameters=[header])
     @verify_token
     def post(self, request):
 
@@ -208,6 +251,17 @@ class Label(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    @swagger_auto_schema(
+        operation_summary="update label",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'label' : openapi.Schema(type=openapi.TYPE_STRING,description="title"),
+                'color' : openapi.Schema(type=openapi.TYPE_STRING,description="description"),
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="label id"),
+            }
+        ),
+        manual_parameters=[header])
     @verify_token
     def put(self, request):
 
@@ -234,6 +288,15 @@ class Label(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+    @swagger_auto_schema(
+        operation_summary="Delete label",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="label id"),
+            }
+        ),
+        manual_parameters=[header])
     @verify_token   
     def delete(self, request):
 
@@ -289,6 +352,19 @@ class Collaborators(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @swagger_auto_schema(
+        operation_summary="add collaborators",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="note id"),
+                'collaborators': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING),
+                    description="username of collaborators")
+            }
+        ),
+        manual_parameters=[header])
     @verify_token
     def put(self, request):
         
@@ -328,6 +404,16 @@ class Collaborators(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    @swagger_auto_schema(
+        operation_summary="Delete collaborators",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="note id"),
+                'user' : openapi.Schema(type=openapi.TYPE_STRING,description="username"),
+            }
+        ),
+        manual_parameters=[header])
     @verify_token
     def delete(self, request):
 
@@ -386,6 +472,20 @@ class LabelNote(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @swagger_auto_schema(
+        operation_summary="add label to note",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="note id"),
+                'label': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_INTEGER),
+                    description="id of label")
+            }
+        ),
+        manual_parameters=[header])
+    @verify_token
     def put(self, request):
 
         try:
@@ -418,7 +518,20 @@ class LabelNote(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
+    @swagger_auto_schema(
+        operation_summary="remove labels",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id' : openapi.Schema(type=openapi.TYPE_INTEGER,description="note id"),
+                'label_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="id of label")
+            }
+        ),
+        manual_parameters=[header])
+    @verify_token
     def delete(self, request):
         try:
             label = Labels.objects.get(id=request.data.get("label_id"))
@@ -441,3 +554,4 @@ class LabelNote(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
+
