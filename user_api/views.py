@@ -1,9 +1,10 @@
 import logging
 
-import redis
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.core.mail import BadHeaderError, send_mail
+from django.core.mail import BadHeaderError
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -11,9 +12,7 @@ from rest_framework.views import APIView
 
 from user_api.models import User
 from user_api.serializers import UserSerializer
-from user_api.utility import EncodeDecodeToken ,redis_instence
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+from user_api.utility import EncodeDecodeToken, mail_sender, redis_instence
 
 logging.basicConfig(filename="fundooNotes.log",filemode="a")
 logger = logging.getLogger()
@@ -50,12 +49,14 @@ class Register(APIView):
                 serializers.create_user(validation_data= serializers.data)
                 #encoding token
                 encoded_token = EncodeDecodeToken.encode_token(serializers)
-                # sending mail with encoded token
-                subject = 'welcome to FundooNotes'
-                message = f'Hi {serializers.data.get("username")}, thank you for registering in FundooNotes. click on the link below to get yourself verified\n http://127.0.0.1:8000/user/verify/{encoded_token}/'
-                email_from = settings.EMAIL_HOST_USER
-                recipient_list = [serializers.data.get("email"), ]
-                send_mail( subject, message, email_from, recipient_list )
+                #sending mail 
+                mail_data={
+                    'encoded_token':encoded_token,
+                    'username':serializers.data.get('username'),
+                    'email':serializers.data.get('email'),
+                    'sender':settings.EMAIL_HOST_USER
+                }
+                mail_sender(mail_data=mail_data)
                 logger.info(f"Registered user")
 
                 return Response({"message":"Registered successfully","data":serializers.data["username"]},status=status.HTTP_201_CREATED)

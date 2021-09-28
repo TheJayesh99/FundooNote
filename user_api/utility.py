@@ -1,4 +1,7 @@
+import json
+
 import jwt
+import pika
 import redis
 from django.conf import settings
 
@@ -29,3 +32,14 @@ class EncodeDecodeToken:
         return decoded_token
 
 redis_instence = redis.Redis(host=settings.REDIS_HOST,port=settings.REDIS_PORT)
+
+def mail_sender(mail_data):
+    connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='send_mail')
+    channel.basic_publish(
+        exchange='',
+        routing_key='send_mail',
+        body=json.dumps(mail_data))
+    connection.close()
