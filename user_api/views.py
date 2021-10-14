@@ -115,23 +115,25 @@ class Login(APIView):
             username = request.data.get("username")
             password = request.data.get("password")
             user = authenticate(username=username,password=password)
-            if user != None and user.is_verified :
-                serializers = UserSerializer(user)
-                encoded_token = EncodeDecodeToken.encode_token(serializers)
-                logger.info(f"logged in successfully by {serializers.data.get('id')}")
-                redis_instence.set(serializers.data.get('id'),encoded_token)
-                return Response({"message":"logged in successfully","data":{"token":encoded_token}},status= status.HTTP_202_ACCEPTED)
+            if user != None :
+                if user.is_verified :
+                    serializers = UserSerializer(user)
+                    encoded_token = EncodeDecodeToken.encode_token(serializers)
+                    logger.info(f"logged in successfully by {serializers.data.get('id')}")
+                    redis_instence.set(serializers.data.get('id'),encoded_token)
+                    return Response({"message":"logged in successfully","data":{"token":encoded_token}},status= status.HTTP_202_ACCEPTED)
 
-            elif not user.is_verified :
-                return Response({"message":"user is not verified","data":user.id},status= status.HTTP_400_BAD_REQUEST)
-            logger.warning("invalid login details")
-            return Response(
-                {
-                    "message":"invalid details"
-                },
-                status=status.HTTP_400_BAD_REQUEST
-                )
-    
+                elif not user.is_verified :
+                    return Response({"message":"user is not verified","data":user.id},status= status.HTTP_400_BAD_REQUEST)
+            else:
+                logger.warning("invalid login details")
+                return Response(
+                    {
+                      "message":"invalid details"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                    )
+        
         except Exception as e:
             logger.error(f"internal server error while login by the user {e}")
             return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
