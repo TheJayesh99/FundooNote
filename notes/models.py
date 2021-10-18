@@ -22,3 +22,5 @@ class NotesModel(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     label = models.ManyToManyField(Labels, related_name="labels",default=0)
     collaborators = models.ManyToManyField(User, related_name="collaborators",default=0)
+    is_archive = models.BooleanField(default=False)
+    is_binned = models.BooleanField(default=False)

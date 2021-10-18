@@ -72,7 +72,7 @@ class TestUser:
         }
         url = reverse("user:login")
         response = client.post(url,data)
-        assert response.status_code == 500
+        assert response.status_code == 400
 
     def test_user_must_verify_himself_before_login(self, client):
 
