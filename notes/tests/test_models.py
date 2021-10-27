@@ -527,3 +527,52 @@ class TestNotes:
         url= reverse("note:label_note")
         response = client.delete(url, note_data, content_type='application/json' , **header)
         assert response.status_code == 204
+
+    def test_to_fetch_labes_added_by_particular_user(self,client):
+        
+        #creating a user
+        user = User.objects.create_user("jayesh34","jay@mail.com","jay_password")
+        user.is_verified = True
+        user.save()
+        #logging the user
+        login_data = {
+            "username":"jayesh34",
+            "password":"jay_password",
+        }
+        url = reverse("user:login")
+        response = client.post(url,login_data)
+        json_data = json.loads(response.content)
+        token = json_data.get('data').get("token")
+        #adding notes
+        notes_data = {
+            "title":"This is my first note",
+            "description":"this is my first note"
+        }
+        url= reverse("note:notes")
+        header = {
+            "HTTP_TOKEN":token,
+        }
+        response = client.post(url, notes_data, content_type='application/json' , **header)
+        json_data = json.loads(response.content)
+        note_id = json_data.get("data").get("note")[0].get("id")
+        #creating label
+        label_data = {
+            "label":"comic",
+            "color":"red"
+        }
+        url= reverse("note:label")
+        response = client.post(url, label_data, content_type='application/json' , **header)
+        json_data = json.loads(response.content)
+        label_id = json_data.get("data").get("id")
+        note_data = {
+            "id":note_id,
+            "label":[label_id]
+        }
+        url= reverse("note:label_note")
+        response = client.put(url, note_data, content_type='application/json' , **header)
+        url = reverse("note:user_label")
+        print(url)
+        response = client.get(url,**header)
+        assert response.status_code == 202
+
+    

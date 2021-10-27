@@ -28,7 +28,7 @@ class EncodeDecodeToken:
 
 def verify_token(function):
 
-    def wrapper(self,request):
+    def wrapper(self,request,id=None):
 
         if 'HTTP_TOKEN' not in request.META:
             resp = JsonResponse({'message':'Token Not provided in header'})
@@ -45,7 +45,10 @@ def verify_token(function):
         if isinstance(request.data, QueryDict):
             request.data._mutable = True
         request.data["user_id"] = decode_token.get("user_id")
-        return function(self, request)
+        if id == None:
+            return function(self, request)
+        else:
+            return function(self, request, id)
     return wrapper
 
 def notes_converter(notes_list):
@@ -60,9 +63,10 @@ def notes_converter(notes_list):
         for label_id in notes.get("label"):
             label_details = LabelSerializer(Labels.objects.get(id = label_id))
             label_list.append(label_details.data)
+        label_list = remove_user_id(label_list=label_list)
         notes["label"] = label_list
 
-        #converting all the labels id into its username
+        #converting all the collaborators id into its username
         collaborator_list = []
         for collaborator_id in notes.get("collaborators"):
             collaborator_details = UserSerializer(User.objects.get(id= collaborator_id))
@@ -77,3 +81,7 @@ def user_details(user_list):
         username_list.append(user_id.get("username"))
     return username_list
     
+def remove_user_id(label_list):
+    for label in label_list:
+        label.pop('user_id')
+    return label_list

@@ -7,6 +7,7 @@ class Labels(models.Model):
 
     label = models.CharField(max_length=10,default="")
     color = models.CharField(max_length=10,default="yellow")
+    user_id = models.ForeignKey(User,on_delete=models.CASCADE)
     
 class NotesModel(models.Model):
 

@@ -26,6 +26,8 @@ class NotesSerializer(serializers.ModelSerializer):
 
         instance.title = validated_data.get("title",instance.title)
         instance.description = validated_data.get("description",instance.description)
+        instance.is_binned = validated_data.get("is_binned",instance.is_binned)
+        instance.is_archive = validated_data.get("is_archive",instance.is_archive)
         if validated_data.get("label"):
             instance.label.set(validated_data.get("label"))
         instance.save()
