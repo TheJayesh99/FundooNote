@@ -11,7 +11,7 @@ from user_api.serializers import UserSerializer
 
 from notes.models import Labels, NotesModel
 from notes.serializers import LabelSerializer, NotesSerializer
-from notes.utility import verify_token, notes_converter, user_details 
+from notes.utility import remove_user_id, verify_token, notes_converter, user_details 
 from drf_yasg.utils import swagger_auto_schema
 
 logging.basicConfig(filename="fundooNotes.log", filemode="a")
@@ -192,10 +192,10 @@ class Label(APIView):
         operation_summary="get label",
         manual_parameters=[header])
     @verify_token
-    def get(self, request):
+    def get(self, request, id):
 
         try:
-            label = Labels.objects.filter(id=request.data.get("id")) 
+            label = Labels.objects.filter(id=id)
             serializer = LabelSerializer(label, many=True)
             return Response({
                 "message" : "The label retrived sucessfully",
@@ -444,11 +444,14 @@ class LabelNote(APIView):
     """
     Api to set label on notes 
     """
+    @swagger_auto_schema(
+        operation_summary="fetch notes",
+        manual_parameters=[header])
     @verify_token
-    def get(self, request):
+    def get(self, request, id):
 
         try:
-            label = Q(label=request.data.get("id"))
+            label = Q(label=id)
             owner = Q(user_id = request.data.get("user_id"))
             collaborators = Q(collaborators=request.data.get("user_id"))
             notes = NotesModel.objects.filter( label & (owner | collaborators)) 
@@ -555,3 +558,35 @@ class LabelNote(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+class UserLabel(APIView):
+
+    """
+    Api to show label having user
+    """
+    @swagger_auto_schema(
+        operation_summary="fetch labels associate with user",
+        manual_parameters=[header])
+    @verify_token
+    def get(self, request):
+        try:
+            label = Labels.objects.filter(user_id=request.data.get("user_id")) 
+            serializer = LabelSerializer(label, many=True)
+            remove_user_id(serializer.data)
+            return Response({
+                "message" : "The label retrived sucessfully",
+                "data" : {
+                    "label":serializer.data
+                    }
+                },
+                status=status.HTTP_202_ACCEPTED
+                )
+        except Exception as e:
+            logger.error(f"internal server error while viewing all label due to {str(e)}")
+            return Response(
+                {
+                    "message": "internal server error",
+                    "data": {"error":str(e)},
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    
