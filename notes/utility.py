@@ -1,8 +1,8 @@
-from user_api.models import User
 import jwt
 import redis
 from django.conf import settings
 from django.http import JsonResponse, QueryDict
+from user_api.models import User
 from user_api.serializers import UserSerializer
 
 from notes.models import Labels
@@ -37,6 +37,13 @@ def verify_token(function):
         decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
         redis_decode_token = EncodeDecodeToken.decode_token(redis_instence.get(decode_token.get("user_id")))
         if redis_decode_token.get("user_id") != decode_token.get("user_id"):
+            resp = JsonResponse({
+                'message':'login again',
+                })
+            resp.status_code = 401
+            return resp
+        user = User.objects.get(id=decode_token.get("user_id"))
+        if not user.is_login:
             resp = JsonResponse({
                 'message':'login again',
                 })
