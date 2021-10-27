@@ -1,9 +1,11 @@
+import json
+
 import pytest
 from mixer.backend.django import mixer
 from rest_framework.reverse import reverse
 from user_api.models import User
-from user_api.utility import EncodeDecodeToken
 from user_api.serializers import UserSerializer
+from user_api.utility import EncodeDecodeToken
 
 pytestmark = pytest.mark.django_db
 
@@ -80,4 +82,25 @@ class TestUser:
         encoded_token = EncodeDecodeToken.encode_token(serializers=UserSerializer(user))
         url = f'http://127.0.0.1:8000/user/verify/{encoded_token}/'
         response = client.get(url)
+        assert response.status_code == 202
+
+    def test_user_should_logout(self, client):
+
+        user = User.objects.create_user("jayesh34","jay@mail.com","jay_password")
+        user.is_verified = True
+        user.save()
+        data = {
+            "username":"jayesh34",
+            "password":"jay_password",
+        }
+        url = reverse("user:login")
+        response = client.post(url,data)
+        json_data = json.loads(response.content)
+        token = json_data.get('data').get("token")
+        header = {
+            "HTTP_TOKEN":token,
+        }
+        url = reverse("user:logout")
+        response = client.post(url,**header)
+        print(json.loads(response.content))
         assert response.status_code == 202

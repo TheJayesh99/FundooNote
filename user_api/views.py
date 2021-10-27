@@ -18,6 +18,7 @@ logging.basicConfig(filename="fundooNotes.log",filemode="a")
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+header = openapi.Parameter('token',in_=openapi.IN_HEADER,type=openapi.TYPE_STRING)
 # Create your views here.
 
 class Register(APIView):
@@ -25,9 +26,6 @@ class Register(APIView):
     """
     Class to register user in user model
     """
-    def get(self, request):
-
-        return Response(f"Welcome to registration plz register")
 
     @swagger_auto_schema(
         operation_summary="register user",
@@ -95,10 +93,6 @@ class Login(APIView):
     """
     Class to validate login of user
     """
-    def get(self, request):
-
-        return Response(f"Welcome to login page")
-
     @swagger_auto_schema(
         operation_summary="login user",
         request_body=openapi.Schema(
@@ -117,6 +111,8 @@ class Login(APIView):
             user = authenticate(username=username,password=password)
             if user != None :
                 if user.is_verified :
+                    user.is_login = True
+                    user.save()
                     serializers = UserSerializer(user)
                     encoded_token = EncodeDecodeToken.encode_token(serializers)
                     logger.info(f"logged in successfully by {serializers.data.get('id')}")
@@ -180,3 +176,36 @@ class Verification(APIView):
                 status=status.HTTP_400_BAD_REQUEST
                 )
                 
+class Logout(APIView):
+
+    """
+    Class to logout the user
+    """
+    
+    @swagger_auto_schema(
+        operation_summary="logout user",
+        manual_parameters=[header])
+    def post(self,request):
+        try:
+            if 'HTTP_TOKEN' in request.META:
+                decode_token = EncodeDecodeToken.decode_token(request.META.get('HTTP_TOKEN'))
+                user = User.objects.get(id=decode_token.get("user_id") )
+                if user !=None:
+                    user.is_login = False
+                    user.save()
+                    return Response({"message":"logged out successfully"},status= status.HTTP_202_ACCEPTED)
+                else:
+                    return Response({"message":"invalid token"},status= status.HTTP_400_BAD_REQUEST)
+
+            else:
+                logger.warning("token not found")
+                return Response(
+                    {
+                      "message":"invalid details"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                    )
+        
+        except Exception as e : 
+            logger.error(f"internal server error while logout by the user {e}")
+            return Response({"message":"internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
