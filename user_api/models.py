@@ -6,4 +6,5 @@ class User(AbstractUser):
 
     is_verified = models.BooleanField(default=False)
     is_login = models.BooleanField(default=False)
+    is_mail_sent = models.BooleanField(default=False)
     
